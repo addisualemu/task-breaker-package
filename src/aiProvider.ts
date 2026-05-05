@@ -1,4 +1,6 @@
 import type { TaskProvider } from "./types.js";
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 /**
  * Environment variables read by aiProvider:
@@ -18,6 +20,7 @@ const ENV_URL = "TASK_BREAKER_API_URL";
 const ENV_KEY = "TASK_BREAKER_API_KEY";
 const ENV_MODEL = "TASK_BREAKER_MODEL";
 const DEFAULT_MODEL = "gpt-4o-mini";
+let envLoaded = false;
 
 interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -30,6 +33,52 @@ interface ChatCompletionResponse {
       content: string;
     };
   }>;
+}
+
+function stripWrappingQuotes(value: string): string {
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    return value.slice(1, -1);
+  }
+  return value;
+}
+
+function loadDotEnvFile(): void {
+  if (envLoaded) {
+    return;
+  }
+  envLoaded = true;
+
+  const envPath = resolve(process.cwd(), ".env");
+  if (!existsSync(envPath)) {
+    return;
+  }
+
+  const text = readFileSync(envPath, "utf8");
+  const lines = text.split(/\r?\n/);
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) {
+      continue;
+    }
+
+    const separatorIndex = trimmed.indexOf("=");
+    if (separatorIndex <= 0) {
+      continue;
+    }
+
+    const key = trimmed.slice(0, separatorIndex).trim();
+    const rawValue = trimmed.slice(separatorIndex + 1).trim();
+    const value = stripWrappingQuotes(rawValue);
+
+    // Keep explicit environment variables authoritative.
+    if (!(key in process.env)) {
+      process.env[key] = value;
+    }
+  }
 }
 
 function buildPrompt(task: string, temperature: number): ChatMessage[] {
@@ -46,13 +95,13 @@ function buildPrompt(task: string, temperature: number): ChatMessage[] {
     {
       role: "system",
       content:
-        "You are a project planning assistant. When given a task, you break it down into an ordered list of subtasks. " +
+        "You are a project planning assistant. When given a task, you break it down into an ordered list of subtasks with estimated durations to complete each subtask. " +
         "Respond ONLY with a JSON array of strings — no markdown, no explanation, no code fences. " +
-        'Example: ["Step one", "Step two", "Step three"]',
+        'Example: ["Step one (1 hr)", "Step two(2hr 30min)", "Step three(4 days)"]',
     },
     {
       role: "user",
-      content: `Break down the following task into subtasks. Detail level: ${detailDescription}.\n\nTask: ${task}`,
+      content: `Break down the following task into subtasks. Detail level: about ${temperature} sub tasks.\n\nTask: ${task}`,
     },
   ];
 }
@@ -82,6 +131,8 @@ export const aiProvider: TaskProvider = async (
   task: string,
   temperature: number
 ): Promise<string[]> => {
+  loadDotEnvFile();
+
   const baseUrl = process.env[ENV_URL];
   if (!baseUrl) {
     throw new Error(

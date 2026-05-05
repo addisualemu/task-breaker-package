@@ -2,15 +2,15 @@ import { defaultProvider } from "./defaultProvider.js";
 import type { BreakTaskOptions, BreakTaskResult } from "./types.js";
 
 const MIN_TEMPERATURE = 1;
-const MAX_TEMPERATURE = 5;
+const MAX_TEMPERATURE = 15;
 const DEFAULT_TEMPERATURE = 3;
 
 /**
  * Breaks a task into an ordered list of subtasks.
  *
  * @param options.task        - Description of the task to break down.
- * @param options.temperature - Detail level 1–5 (default 3).
- *                              1 = fewest/broadest, 5 = most granular.
+ * @param options.temperature - Detail level 1–15 (default 3).
+ *                              1 = fewest/broadest, 15 = most granular.
  * @param options.provider    - Optional custom provider. Defaults to the
  *                              built-in heuristic provider.
  *

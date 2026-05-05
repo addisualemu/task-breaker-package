@@ -167,7 +167,7 @@ export const defaultProvider: TaskProvider = async (
 ): Promise<string[]> => {
   const match = TEMPLATES.find((t) => t.pattern.test(task));
   if (match) {
-    // levels is 0-indexed; temperature is 1-5
+    // levels is 0-indexed; temperature is 1-15
     return match.levels[temperature - 1];
   }
   return genericBreakdown(task, temperature);
