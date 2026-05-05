@@ -1,6 +1,7 @@
 {
   "name": "task-breaker",
   "version": "0.1.0",
+  "type": "module",
   "description": "Break any task into subtasks with configurable detail via a pluggable provider.",
   "keywords": ["task", "breakdown", "ai", "subtasks", "planning"],
   "author": "",
