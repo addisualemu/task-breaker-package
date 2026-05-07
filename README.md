@@ -24,9 +24,17 @@ npm install task-breaker
 ```ts
 import { breakTask } from "task-breaker";
 
-const result = await breakTask({ task: "build dog house", temperature: 2 });
+const result = await breakTask({
+  task: { taskName: "build dog house", subtasks: [] },
+  temperature: 2,
+});
 console.log(result.subtasks);
-// → ["Plan the design", "Buy materials", "Build the structure", "Finish and paint"]
+// → [
+//   { taskName: "Plan the design", subtasks: [] },
+//   { taskName: "Buy materials", subtasks: [] },
+//   { taskName: "Build the structure", subtasks: [] },
+//   { taskName: "Finish and paint", subtasks: [] }
+// ]
 ```
 
 ### CommonJS
@@ -43,18 +51,44 @@ const { breakTask } = require("task-breaker");
 
 | Option        | Type           | Required | Default | Description                                              |
 | ------------- | -------------- | -------- | ------- | -------------------------------------------------------- |
-| `task`        | `string`       | ✅       | —       | Plain-language description of the task to break down.    |
+| `task`        | `string \| Task` | ✅     | —       | Root task text or an existing task tree to expand.       |
 | `temperature` | `number` (int) | ❌       | `3`     | Detail level from **1** (fewest) to **5** (most granular). |
+| `selectedSubtask` | `number[]` | ❌       | root    | 1-based path to the subtask to expand, e.g. `[3, 5, 2]`. |
 | `provider`    | `TaskProvider` | ❌       | built-in | Custom async provider; see below.                       |
 
 **Returns** `BreakTaskResult`:
 
 ```ts
 {
-  task: string;        // trimmed input task
+  task: Task;          // trimmed input task in recursive form
   temperature: number; // temperature used
-  subtasks: string[];  // ordered list of subtasks
+  subtasks: Task[];    // top-level subtasks from the returned root task
 }
+```
+
+## Repeated breakdown
+
+You can break down the root task first, then expand any nested subtask later by passing the full task tree back in with a 1-based `selectedSubtask` path:
+
+```ts
+import { breakTaskWithAi } from "task-breaker";
+
+const root = await breakTaskWithAi({
+  task: { taskName: "launch a consulting business", subtasks: [] },
+  temperature: 3,
+});
+
+const refined = await breakTaskWithAi({
+  task: root.task,
+  selectedSubtask: [2],
+  temperature: 4,
+});
+
+const deeplyRefined = await breakTaskWithAi({
+  task: refined.task,
+  selectedSubtask: [2, 1],
+  temperature: 5,
+});
 ```
 
 ---
@@ -73,7 +107,7 @@ const { breakTask } = require("task-breaker");
 
 ## Custom provider
 
-Implement the `TaskProvider` interface to plug in your own logic — for example, an LLM call:
+Implement the `TaskProvider` interface to plug in your own logic — it may return either raw subtask strings or recursive `Task` objects. Example with raw strings:
 
 ```ts
 import { breakTask, TaskProvider } from "task-breaker";
@@ -109,18 +143,24 @@ const result = await breakTask({
 ## TypeScript types
 
 ```ts
-export type TaskProvider = (task: string, temperature: number) => Promise<string[]>;
+export interface Task {
+  taskName: string;
+  subtasks: Task[];
+}
+
+export type TaskProvider = (task: string, temperature: number) => Promise<Array<string | Task>>;
 
 export interface BreakTaskOptions {
-  task: string;
+  task: string | Task;
   temperature?: number;  // 1–5, default 3
+  selectedSubtask?: number[]; // 1-based path into nested subtasks
   provider?: TaskProvider;
 }
 
 export interface BreakTaskResult {
-  task: string;
+  task: Task;
   temperature: number;
-  subtasks: string[];
+  subtasks: Task[];
 }
 ```
 

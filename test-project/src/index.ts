@@ -2,18 +2,23 @@ import { breakTaskWithAi } from "task-breaker";
 
 async function main() {
   try {
-    const result = await breakTaskWithAi({
-      task: "Setup selinium with ChromeDriver  .",
-      temperature: 15,
+    const rootResult = await breakTaskWithAi({
+      task: {
+        taskName:
+          "Going from software Engineer to start business as an AI consultant for small businesses.",
+        subtasks: [],
+      },
+      temperature: 5,
+    });
+
+    const refinedResult = await breakTaskWithAi({
+      task: rootResult.task,
+      selectedSubtask: [1],
+      temperature: 4,
     });
 
     console.log("=== AI Provider ===");
-    console.log(`Task: ${result.task}`);
-    console.log(`Temperature: ${result.temperature}`);
-    console.log("Subtasks:");
-    result.subtasks.forEach((subtask, i) => {
-      console.log(`  ${i + 1}. ${subtask}`);
-    });
+    console.log(JSON.stringify(refinedResult.task, null, 2));
   } catch (error) {
     console.error(`AI provider error: ${(error as Error).message}`);
     process.exit(1);

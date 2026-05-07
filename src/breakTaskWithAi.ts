@@ -1,10 +1,11 @@
 import { breakTask } from "./breakTask.js";
-import type { BreakTaskResult } from "./types.js";
+import type { BreakTaskResult, TaskLike, TaskPath } from "./types.js";
 import { aiProvider } from "./aiProvider.js";
 
 export interface BreakTaskWithAiOptions {
-  task: string;
+  task: TaskLike;
   temperature?: number;
+  selectedSubtask?: TaskPath;
 }
 
 /**
@@ -21,6 +22,7 @@ export async function breakTaskWithAi(
   return breakTask({
     task: options.task,
     temperature: options.temperature,
+    selectedSubtask: options.selectedSubtask,
     provider: aiProvider,
   });
 }
