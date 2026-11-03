@@ -2,6 +2,27 @@ import { breakTask } from "../src/breakTask";
 import { defaultProvider } from "../src/defaultProvider";
 import type { Task, TaskProvider } from "../src/types";
 
+const ORIGINAL_ENV = { ...process.env };
+const ORIGINAL_FETCH = global.fetch;
+
+beforeEach(() => {
+  process.env.TASK_BREAKER_API_URL = "https://example.com/v1";
+  process.env.TASK_BREAKER_API_KEY = "test-key";
+  process.env.TASK_BREAKER_MODEL = "test-model";
+
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      choices: [{ message: { content: '["Plan the work","Do the work"]' } }],
+    }),
+  }) as typeof fetch;
+});
+
+afterEach(() => {
+  process.env = { ...ORIGINAL_ENV };
+  global.fetch = ORIGINAL_FETCH;
+});
+
 // ---------------------------------------------------------------------------
 // breakTask – input validation
 // ---------------------------------------------------------------------------
@@ -102,6 +123,54 @@ describe("breakTask – result shape", () => {
     expect(result.task.subtasks[0].taskName).toBe("interview users");
   });
 
+  test("uses aiProvider by default when no provider is supplied", async () => {
+    const originalFetch = global.fetch;
+    const originalApiUrl = process.env.TASK_BREAKER_API_URL;
+    const originalApiKey = process.env.TASK_BREAKER_API_KEY;
+    const originalModel = process.env.TASK_BREAKER_MODEL;
+
+    process.env.TASK_BREAKER_API_URL = "https://example.com/v1";
+    process.env.TASK_BREAKER_API_KEY = "test-key";
+    process.env.TASK_BREAKER_MODEL = "test-model";
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '["Plan the work","Do the work"]' } }],
+      }),
+    }) as typeof fetch;
+
+    try {
+      const result = await breakTask({ task: "build a house", temperature: 2 });
+
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(result.subtasks).toEqual([
+        { taskName: "Plan the work", subtasks: [] },
+        { taskName: "Do the work", subtasks: [] },
+      ]);
+    } finally {
+      global.fetch = originalFetch;
+
+      if (originalApiUrl === undefined) {
+        delete process.env.TASK_BREAKER_API_URL;
+      } else {
+        process.env.TASK_BREAKER_API_URL = originalApiUrl;
+      }
+
+      if (originalApiKey === undefined) {
+        delete process.env.TASK_BREAKER_API_KEY;
+      } else {
+        process.env.TASK_BREAKER_API_KEY = originalApiKey;
+      }
+
+      if (originalModel === undefined) {
+        delete process.env.TASK_BREAKER_MODEL;
+      } else {
+        process.env.TASK_BREAKER_MODEL = originalModel;
+      }
+    }
+  });
+
   test("defaults temperature to 3 when omitted", async () => {
     const result = await breakTask({ task: "build dog house" });
     expect(result.temperature).toBe(3);
@@ -113,16 +182,34 @@ describe("breakTask – result shape", () => {
 // ---------------------------------------------------------------------------
 
 describe("breakTask – temperature detail scaling", () => {
-  test("higher temperature produces more subtasks for a known task", async () => {
-    const low = await breakTask({ task: "build dog house", temperature: 1 });
-    const high = await breakTask({ task: "build dog house", temperature: 5 });
+  test("higher temperature produces more subtasks when using a provider that scales with temp", async () => {
+    const low = await breakTask({
+      task: "build dog house",
+      temperature: 1,
+      provider: async (_task, temp) =>
+        Array.from({ length: temp }, (_, index) => `step ${index + 1}`),
+    });
+
+    const high = await breakTask({
+      task: "build dog house",
+      temperature: 5,
+      provider: async (_task, temp) =>
+        Array.from({ length: temp }, (_, index) => `step ${index + 1}`),
+    });
+
     expect(high.subtasks.length).toBeGreaterThan(low.subtasks.length);
   });
 
-  test("all five temperatures produce valid results", async () => {
+  test("all five temperatures produce valid results when a provider scales by temperature", async () => {
     for (let t = 1; t <= 5; t++) {
-      const result = await breakTask({ task: "build dog house", temperature: t });
-      expect(result.subtasks.length).toBeGreaterThan(0);
+      const result = await breakTask({
+        task: "build dog house",
+        temperature: t,
+        provider: async (_task, temp) =>
+          Array.from({ length: temp }, (_, index) => `step ${index + 1}`),
+      });
+
+      expect(result.subtasks.length).toBe(t);
     }
   });
 });

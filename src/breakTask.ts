@@ -1,4 +1,4 @@
-import { defaultProvider } from "./defaultProvider.js";
+import { aiProvider } from "./aiProvider.js";
 import type {
   BreakTaskOptions,
   BreakTaskResult,
@@ -141,7 +141,7 @@ function replaceSubtasksAtPath(task: Task, path: TaskPath, subtasks: Task[]): Ta
 export async function breakTask(
   options: BreakTaskOptions
 ): Promise<BreakTaskResult> {
-  const { task, provider = defaultProvider } = options;
+  const { task, provider = aiProvider } = options;
   const selectedSubtask = validateSelectedSubtask(options.selectedSubtask);
   const normalizedTask = normalizeTaskTree(normalizeTask(task));
 

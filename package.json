@@ -20,10 +20,12 @@
     "dist"
   ],
   "scripts": {
-    "build": "npm run build:esm && npm run build:cjs && npm run build:types",
+    "clean": "node -e \"const fs=require('fs'); fs.rmSync('dist', { recursive: true, force: true });\"",
+    "build": "npm run clean && npm run build:esm && npm run build:cjs && npm run build:types && npm run postbuild",
     "build:esm": "tsc -p tsconfig.esm.json",
     "build:cjs": "tsc -p tsconfig.cjs.json",
     "build:types": "tsc -p tsconfig.types.json",
+    "postbuild": "node -e \"const fs=require('fs'); const path=require('path'); const dist=path.resolve('dist'); for (const [name, type] of [['esm','module'], ['cjs','commonjs']]) { const file=path.join(dist, name, 'package.json'); fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, JSON.stringify({ type }, null, 2)); }\"",
     "test": "jest",
     "prepublishOnly": "npm run build && npm test"
   },
