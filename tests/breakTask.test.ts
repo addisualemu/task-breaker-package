@@ -1,4 +1,5 @@
 import { breakTask } from "../src/breakTask";
+import { createAiProvider } from "../src/aiProvider";
 import { defaultProvider } from "../src/defaultProvider";
 import type { Task, TaskProvider } from "../src/types";
 
@@ -211,6 +212,64 @@ describe("breakTask – temperature detail scaling", () => {
 
       expect(result.subtasks.length).toBe(t);
     }
+  });
+});
+
+describe("aiProvider configuration", () => {
+  test("createAiProvider uses explicit config before environment variables", async () => {
+    const provider = createAiProvider({
+      apiUrl: "https://custom.example/v1",
+      apiKey: "custom-key",
+      model: "custom-model",
+    });
+
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '["A","B"]' } }],
+      }),
+    }) as jest.Mock;
+
+    global.fetch = fetchMock as typeof fetch;
+
+    await provider("build a house", 2);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://custom.example/v1/chat/completions",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: "Bearer custom-key",
+          "Content-Type": "application/json",
+        }),
+        method: "POST",
+      })
+    );
+  });
+
+  test("createAiProvider retries transient failures", async () => {
+    const provider = createAiProvider({
+      apiUrl: "https://example.com/v1",
+      apiKey: "test-key",
+      model: "test-model",
+      retries: 1,
+    });
+
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 500, text: async () => "service unavailable" })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content: '["Retry ok"]' } }],
+        }),
+      });
+
+    global.fetch = fetchMock as typeof fetch;
+
+    const result = await provider("build something", 1);
+
+    expect(result).toEqual(["Retry ok"]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
 

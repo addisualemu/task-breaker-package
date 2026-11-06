@@ -7,9 +7,9 @@ Out of scope: `defaultProvider` fixes. It is a test-only helper; production alwa
 ## Phase 1 - Packaging and build correctness
 
 - [x] Add `dist/cjs/package.json` (`{"type":"commonjs"}`) and `dist/esm/package.json` (`{"type":"module"}`) as a post-build step, so `require("task-breaker")` works.
-- [ ] Reorder `exports` in `package.json`: put `types` first and add separate `import` / `require` type entries.
+- [x] Reorder `exports` in `package.json`: put `types` first and add separate `import` / `require` type entries.
 - [x] Add a `clean` script and run it before `build`.
-- [ ] Add `engines` (`node >= 18`) and `sideEffects: false`.
+- [x] Add `engines` (`node >= 18`) and `sideEffects: false`.
 - [ ] Add `repository`, `author`, `homepage`, and a `LICENSE` file.
 - [ ] Verify the package contents with `npm pack --dry-run`.
 
@@ -18,7 +18,7 @@ Out of scope: `defaultProvider` fixes. It is a test-only helper; production alwa
 - [x] Make `breakTask` use `aiProvider` by default in production.
 - [x] Keep `defaultProvider` only for tests (not the default, and not documented as a production option).
 - [ ] Decide whether to keep `defaultProvider` exported from `src/index.ts`.
-- [ ] Update README so the Quick start and Temperature guide describe AI behaviour.
+- [x] Update README so the Quick start and Temperature guide describe AI behaviour.
 
 ## Phase 3 - AI provider correctness
 

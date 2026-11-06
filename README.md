@@ -1,13 +1,16 @@
 # task-breaker
 
-> Break any task into an ordered list of subtasks with configurable detail level.
+> Break any task into an ordered list of subtasks using an AI-first provider pipeline.
 
 ## Features
 
 - **Temperature 1–5** — controls how granular the breakdown is (1 = coarse, 5 = very detailed).
-- **Pluggable provider** — drop in your own AI or custom logic; ships with a built-in heuristic provider.
+- **AI-first production flow** — `breakTask()` uses the OpenAI-compatible AI provider by default.
+- **Pluggable provider** — swap in your own custom logic when needed.
 - **Dual module** — works in both ESM and CommonJS environments.
 - **Fully typed** — first-class TypeScript support with exported types.
+
+> `defaultProvider` is a test helper. Production should use the AI-backed provider, configured via `TASK_BREAKER_API_URL` (and optionally `TASK_BREAKER_API_KEY` / `TASK_BREAKER_MODEL`).
 
 ---
 
@@ -24,18 +27,18 @@ npm install task-breaker
 ```ts
 import { breakTask } from "task-breaker";
 
+process.env.TASK_BREAKER_API_URL = "https://api.openai.com/v1";
+process.env.TASK_BREAKER_API_KEY = "<your-key>";
+
 const result = await breakTask({
   task: { taskName: "build dog house", subtasks: [] },
   temperature: 2,
 });
+
 console.log(result.subtasks);
-// → [
-//   { taskName: "Plan the design", subtasks: [] },
-//   { taskName: "Buy materials", subtasks: [] },
-//   { taskName: "Build the structure", subtasks: [] },
-//   { taskName: "Finish and paint", subtasks: [] }
-// ]
 ```
+
+The default runtime path is the AI provider, so `TASK_BREAKER_API_URL` must be set in production. You can still override it with a custom provider when needed.
 
 ### CommonJS
 
@@ -54,7 +57,9 @@ const { breakTask } = require("task-breaker");
 | `task`        | `string \| Task` | ✅     | —       | Root task text or an existing task tree to expand.       |
 | `temperature` | `number` (int) | ❌       | `3`     | Detail level from **1** (fewest) to **5** (most granular). |
 | `selectedSubtask` | `number[]` | ❌       | root    | 1-based path to the subtask to expand, e.g. `[3, 5, 2]`. |
-| `provider`    | `TaskProvider` | ❌       | built-in | Custom async provider; see below.                       |
+| `provider`    | `TaskProvider` | ❌       | AI provider | Custom async provider; override only when you need custom logic. |
+
+> In production, the default provider is the AI-backed implementation. The heuristic `defaultProvider` is intentionally a test helper.
 
 **Returns** `BreakTaskResult`:
 
