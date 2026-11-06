@@ -10,8 +10,8 @@ Out of scope: `defaultProvider` fixes. It is a test-only helper; production alwa
 - [x] Reorder `exports` in `package.json`: put `types` first and add separate `import` / `require` type entries.
 - [x] Add a `clean` script and run it before `build`.
 - [x] Add `engines` (`node >= 18`) and `sideEffects: false`.
-- [ ] Add `repository`, `author`, `homepage`, and a `LICENSE` file.
-- [ ] Verify the package contents with `npm pack --dry-run`.
+- [x] Add `repository`, `author`, `homepage`, and a `LICENSE` file.
+- [x] Verify the package contents with `npm pack --dry-run`.
 
 ## Phase 2 - Production uses the AI provider
 

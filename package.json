@@ -4,8 +4,13 @@
   "type": "module",
   "description": "Break any task into subtasks with configurable detail via a pluggable provider.",
   "keywords": ["task", "breakdown", "ai", "subtasks", "planning"],
-  "author": "",
+  "author": "task-breaker contributors",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-org/task-breaker.git"
+  },
+  "homepage": "https://github.com/your-org/task-breaker#readme",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",
@@ -30,8 +35,9 @@
     "build:cjs": "tsc -p tsconfig.cjs.json",
     "build:types": "tsc -p tsconfig.types.json",
     "postbuild": "node -e \"const fs=require('fs'); const path=require('path'); const dist=path.resolve('dist'); for (const [name, type] of [['esm','module'], ['cjs','commonjs']]) { const file=path.join(dist, name, 'package.json'); fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, JSON.stringify({ type }, null, 2)); }\"",
+    "pack:check": "npm pack --dry-run",
     "test": "jest",
-    "prepublishOnly": "npm run build && npm test"
+    "prepublishOnly": "npm run build && npm test && npm run pack:check"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
